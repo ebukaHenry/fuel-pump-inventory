@@ -6,7 +6,6 @@ import random
 
 st.set_page_config(page_title="FuelFlow", page_icon="⛽", layout="wide")
 
-# Custom Styling
 st.markdown("""
 <style>
     .main {background-color: #f8fafc;}
@@ -28,12 +27,14 @@ if 'sales_data' not in st.session_state:
 st.title("⛽ FuelFlow - Fuel Inventory & Sales")
 st.caption("Professional Fuel Station Management System")
 
-tab1, tab2, tab3, tab4 = st.tabs(["Dashboard", "Record Sale", "Sales History", "Inventory"])
+tab1, tab2, tab3, tab4 = st.tabs(["📊 Dashboard", "🛢️ Record Sale", "📜 Sales History", "📦 Inventory"])
 
 with tab1:
     st.subheader("Today's Performance")
-    today = date.today()
-    today_sales = st.session_state.sales_data[st.session_state.sales_data['Date'].dt.date == today]
+    
+    today_sales = st.session_state.sales_data[
+        st.session_state.sales_data['Date'].dt.date == date.today()
+    ]
     
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Total Revenue", f"₦{today_sales['Amount'].sum():,}")
@@ -41,10 +42,13 @@ with tab1:
     c3.metric("Gas Sold", f"{today_sales[today_sales['Fuel_Type'] == 'Gas']['Quantity'].sum():.1f} KG")
     c4.metric("Transactions", len(today_sales))
 
-    # Sales Trend
-    st.subheader("Sales Trend")
+    # Sales Trend Graph - FIXED
+    st.subheader("Sales Trend (Last 15 Days)")
     trend = st.session_state.sales_data.groupby('Date')['Amount'].sum().reset_index()
-    fig = px.line(trend, x='Date', y='Amount', markers=True, line_color='#6B21A8')
+    fig = px.line(trend, x='Date', y='Amount', 
+                  markers=True,
+                  color_discrete_sequence=['#6B21A8'])
+    fig.update_layout(height=420)
     st.plotly_chart(fig, use_container_width=True)
 
 with tab2:
@@ -54,7 +58,7 @@ with tab2:
         qty = st.number_input("Quantity", min_value=0.1, value=45.0, step=0.5)
         amount = st.number_input("Amount (₦)", min_value=1000, value=8000, step=500)
         
-        if st.form_submit_button("Save Sale"):
+        if st.form_submit_button("✅ Save Sale"):
             new_sale = pd.DataFrame([{
                 'Date': pd.Timestamp.now(),
                 'Staff': "Demo Staff",
@@ -64,18 +68,19 @@ with tab2:
             }])
             st.session_state.sales_data = pd.concat([st.session_state.sales_data, new_sale], ignore_index=True)
             st.success("✅ Sale Recorded Successfully!")
+            st.rerun()
 
 with tab3:
     st.subheader("Sales History")
     df = st.session_state.sales_data.copy()
     df['Date'] = df['Date'].dt.strftime('%Y-%m-%d %H:%M')
-    st.dataframe(df.sort_values('Date', ascending=False), use_container_width=True)
+    st.dataframe(df.sort_values('Date', ascending=False), use_container_width=True, hide_index=True)
 
 with tab4:
     st.subheader("Current Stock Levels")
     stocks = {"Petrol": 12400, "Diesel": 8750, "Gas": 1850, "Kerosene": 2450}
     for fuel, stock in stocks.items():
         st.write(f"**{fuel}**")
-        st.progress(stock/20000, text=f"{stock:,} Litres / 20,000")
+        st.progress(stock/20000, text=f"{stock:,} / 20,000")
 
-st.sidebar.success("App is Live!")
+st.sidebar.success("✅ App is Live")
